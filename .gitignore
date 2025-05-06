@@ -30,3 +30,33 @@
 *.exe
 *.out
 *.app
+
+# === Visual Studio ===
+.vs/                         # VS “solution” cache (CopilotIndices, SemanticSymbols, FileContentIndex…)
+*.suo                        # VS solution user options
+*.user                       # VS project user options
+*.userosscache               # VS cache
+*.sln.docstates              # VS document state
+
+# === VSCode / JetBrains IDEA (if you ever open it there) ===
+.vscode/
+.idea/
+
+# === Archives / large data ===
+*.zip
+*.csv                       # or better yet use Git-LFS for large data
+*.png
+
+# === Build outputs ===
+[Bb]in/                      # binaries
+[Oo]bj/                      # object files, etc.
+
+*.idb                        # incremental debug db
+*.pdb                        # program debug db
+
+# === Misc caches & temp files ===
+*.db                         # SQLite caches (e.g. CopilotIndices.db)
+*.db-shm
+*.db-wal
+DocumentLayout.backup.json
+v17/                         # VS’s old “.suo” and layout folder
