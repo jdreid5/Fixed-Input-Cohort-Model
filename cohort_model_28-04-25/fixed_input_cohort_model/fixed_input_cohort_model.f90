@@ -43,6 +43,8 @@
         logical:: dir_e             ! test if a folder exists
         character(1):: noch(2)      ! used for naming of subfolders
         character(22):: f_path      ! path for output variables
+		
+		character(len=2000) :: line, msg
 
         ! indices
         integer:: gp ! grid point index
@@ -61,6 +63,7 @@
         character(50):: dummy
         character(len = 150):: header
         integer:: counter, ios
+		character(7):: x_str, y_str
         integer:: x_bng, y_bng
 		character(10):: socini_string
 		real:: socini
@@ -78,19 +81,19 @@
 		
 		character(20):: tree_species
 		character(25):: CEH_LCM
-		real:: tree_carbon(56)
-		real:: plant_input(56)
+		real:: tree_carbon(100)
+		real:: plant_input(100)
         
 		! cohort calculation variables		
-        real:: SOC_year(56)
-        real:: initial_SOC_decrease(56)
+        real:: SOC_year(100)
+        real:: initial_SOC_decrease(100)
         real:: initial_soil_carbon_left
 		
-        real:: litter_model(56)
-        real:: annual_SOC(56)
-        real:: added_SOC(56)
+        real:: litter_model(100)
+        real:: annual_SOC(100)
+        real:: added_SOC(100)
 		
-		real:: cumulative_tree_C(56)
+		real:: cumulative_tree_C(100)
 		
 		!************************************************INPUT X AND Y COORDINATES FOR TIME SERIES GRAPH HERE*************************************************
 		integer:: chosen_x_point = 375500
@@ -138,6 +141,9 @@
 		
         Open (29, FILE = "tree_carbon_2080.csv",ACTION = 'write')
         Open (30, FILE = "cumulative_tree_carbon_2080.csv",ACTION = 'write')
+		
+		Open (31, FILE = "delta_biome_carbon_2050.csv",ACTION = 'write')
+		Open (32, FILE = "delta_biome_carbon_2080.csv",ACTION = 'write')
   
         Open (60, FILE = "grid_point_time_series.csv", ACTION = 'write')  
         
@@ -147,7 +153,7 @@
         
         ! open user-selected rcp scenario dataset, combining HILDA land use data, SOC data, and CHESS-SCAPE precipitation & temperature data
         !open (13, FILE = "01_all_species_rcp"//rcp_scenario//"_"//rcp_scenario_ensemble//"_soc_lu.csv", action = 'read')
-		open(13, FILE = "01_all_species_rcp26_cumul_treeC_annual_soil-input_Mg_C_ha.csv", action = 'read')
+		open(13, FILE = "ALL_rcp85_cumul_treeC_annual_soil-input_Mg_C_ha_best_choice_STSF.csv", action = 'read')
 
 		fl = find_length(13) - 1		! subtract 1 to account for header line
 		read(13, *, iostat=ios) header  ! read in header line
@@ -159,8 +165,14 @@
         do n = 1, fl
 
             ! read in input data
-            read (13,*) dummy, x_bng, y_bng, CEH_LCM, socini_string, dummy, dummy, dummy, dummy, tree_species, dummy, tree_carbon, plant_input
+            read (13,*) dummy, x_str, y_str, CEH_LCM, socini_string, dummy, dummy, dummy, dummy, tree_species, dummy, tree_carbon, plant_input
 			
+			call dequote(x_str)            ! remove " or ' if present
+			call dequote(y_str)
+
+			read(x_str,*) x_bng            ! convert input string to integer to match chosen grid point
+			read(y_str,*) y_bng
+						
 			! read in initial SOC value as a string due to presence of "NA" in the data, then read that value into a real variable if it is not "NA".
 			if (trim(socini_string) /= "NA") then
 				read(socini_string,*) socini
@@ -187,7 +199,7 @@
 			added_SOC = 0.0
 			cumulative_tree_C = 0.0
             
-			do yr = 1, 56	! runs for 56 years, 2025-2080 inclusive
+			do yr = 1, 100	! runs for 100 years, 2025-2124 inclusive
 				
                 ! cohort model calcs - replicating Hastings Cohort Model spreadsheet
                 initial_soil_carbon_left = 0.0 * EXP(-(yr - 1.0) / 1.0) + 0.0 * EXP(-(yr - 1.0) / 2.0) + 0.44 * EXP(-(yr - 1.0) / 30.0) + 0.56 * EXP(-(yr - 1.0) / 500.0) ! Column L in spreadsheet
@@ -213,23 +225,23 @@
 					write(24,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',(annual_SOC(yr) - socini)		! The delta value between the final SOC and the initial SOC 
 					
 					write(25,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',tree_carbon(yr)					! Tree carbon values inside input spreadsheet
-					write(26,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',cumulative_tree_C(yr)				! Tree carbon + SOC ** upper line on graph
+					write(26,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',cumulative_tree_C(yr)				! Tree carbon + SOC ** upper line on graph ** this might be total biome carbon **
+					
+					write(31,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',(cumulative_tree_C(yr) - socini)	! Change in total biome carbon
 					
 				end if
 				
 				! then write files at year 2080
 				if (yr .eq. 56) then 
-					write(20,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',socini					! Initial SOC
-					
-					!write(21,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',SOC_year(yr)				! The absolute value of SOC after the defined period ** column N from spreadsheet ** lower line on SOC change graph
-					!write(22,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',initial_SOC_decrease(yr)	! The delta value of SOC between the final SOC and the initial SOC ** column I from spreadsheet ** lower line on SOC change graph
-					
+					write(20,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',socini						! Initial SOC
+
 					write(27,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',annual_SOC(yr)				! The absolute value of SOC after the defined period ** column H from spreadsheet ** middle line on graph
 					write(28,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',(annual_SOC(yr) - socini)		! The delta value between the final SOC and the initial SOC 
 					
 					write(29,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',tree_carbon(yr)					! Tree carbon values inside input spreadsheet
 					write(30,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',cumulative_tree_C(yr)				! Tree carbon + SOC ** upper line on graph
-					!write(35,"(i10,a1,i10,a1,F15.13)") x_bng,',',y_bng,',',litter_model(yr)				! Column Q from spreadsheet
+					
+					write(32,"(i10,a1,i10,a1,F15.5)") x_bng,',',y_bng,',',(cumulative_tree_C(yr) - socini)	! Change in total biome carbon
 					
                 end if
             end do
@@ -275,7 +287,19 @@
             call system("mkdir "//str(1:le)//"")
         end if
         return
-        end subroutine
+		end subroutine
+		!--------------------------------------------------
+		subroutine dequote(s)
+		character(len=*), intent(inout) :: s
+		integer :: L
+		L = len_trim(s)
+		if (L >= 2) then
+			if ( (s(1:1) == '"'  .and. s(L:L) == '"')  .or. &
+				(s(1:1) == '''' .and. s(L:L) == '''') ) then
+				s = s(2:L-1)                    ! keep everything inside the quotes
+			end if
+		end if
+		end subroutine dequote
         ! -------------------------------------------------
         function set_no(j)	! make string (actually array) of number j, of length 2 and padded with 0 if less than 10
         ! NB - set_no is a character array, not a string
@@ -325,6 +349,8 @@
 		write(unit,'(a)') "    ('tree_carbon_2080.csv', 'Tree Carbon 2080'),"
 		write(unit,'(a)') "    ('cumulative_tree_carbon_2050.csv', 'Cumulative Tree Carbon 2050'),"
 		write(unit,'(a)') "    ('cumulative_tree_carbon_2080.csv', 'Cumulative Tree Carbon 2080'),"
+		write(unit,'(a)') "    ('delta_biome_carbon_2050.csv', 'Delta Biome Carbon 2050'),"
+		write(unit,'(a)') "    ('delta_biome_carbon_2080.csv', 'Delta Biome Carbon 2080'),"
 		write(unit,'(a)') "]"
 		write(unit,'(a)') ""
 		write(unit,'(a)') "def plot_one(args):"
@@ -345,7 +371,7 @@
 		write(unit,'(a)') "    img = ax.imshow(np.ma.masked_invalid(grid), origin='lower', interpolation='nearest', cmap='gist_ncar')"
 		write(unit,'(a)') "    cbar = plt.colorbar(img, shrink=0.5)"
 		write(unit,'(a)') "    ax.set_title(title)"
-		write(unit,'(a)') "    cbar.set_label('SOC (t C ha^-1)', rotation=270, labelpad=15)"
+		write(unit,'(a)') "    cbar.set_label('SOC (t C ha$^{-1}$)', rotation=270, labelpad=15)"
 		write(unit,'(a)') "    ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{int(x)}'))"
 		write(unit,'(a)') "    ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{int(y)}'))"
 		write(unit,'(a)') "    out = title.replace(' ', '_') + '.png'"
@@ -383,8 +409,8 @@
 		write(70, '(A)') "# Read the CSV file"
 		write(70, '(A)') "df = pd.read_csv(r'" // trim(input_csv) // "')"
 		write(70, '(A)') ""
-		write(70, '(A)') "# Generate years from 2025 to 2080"
-		write(70, '(A)') "years = list(range(2025, 2081))"
+		write(70, '(A)') "# Generate years from 2025 to 2124"
+		write(70, '(A)') "years = list(range(2025, 2125))"
 		write(70, '(A)') ""
 		write(70, '(A)') "# Plot each SOC series against Year"
 		write(70, '(A)') "plt.figure()"
@@ -393,9 +419,9 @@
 		write(70, '(A)') ""
 		write(70, '(A)') "plt.xlabel('Year')"
 		write(70, '(A)') "plt.ylabel('SOC (t C ha$^{-1}$)')"
-		write(70, '(A)') "plt.title('Grid Point "//trim(adjustl(x_str))//" "//trim(adjustl(y_str))//" Time Series 2025-2080')"
+		write(70, '(A)') "plt.title('Grid Point "//trim(adjustl(x_str))//" "//trim(adjustl(y_str))//" Time Series 2025-2124')"
 		write(70, '(A)') "plt.legend()"
-		write(70, '(A)') "plt.xlim(2025, 2080)"
+		write(70, '(A)') "plt.xlim(2025, 2124)"
 		write(70, '(A)') "plt.savefig('Grid_Point_"//trim(adjustl(x_str))//"_"//trim(adjustl(y_str))//"_Time_Series.png')"
 
 		close(70)

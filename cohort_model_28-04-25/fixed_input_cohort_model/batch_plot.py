@@ -13,6 +13,8 @@ files = [
     ('tree_carbon_2080.csv', 'Tree Carbon 2080'),
     ('cumulative_tree_carbon_2050.csv', 'Cumulative Tree Carbon 2050'),
     ('cumulative_tree_carbon_2080.csv', 'Cumulative Tree Carbon 2080'),
+    ('delta_biome_carbon_2050.csv', 'Delta Biome Carbon 2050'),
+    ('delta_biome_carbon_2080.csv', 'Delta Biome Carbon 2080'),
 ]
 
 def plot_one(args):
@@ -33,7 +35,7 @@ def plot_one(args):
     img = ax.imshow(np.ma.masked_invalid(grid), origin='lower', interpolation='nearest', cmap='gist_ncar')
     cbar = plt.colorbar(img, shrink=0.5)
     ax.set_title(title)
-    cbar.set_label('SOC (t C ha^-1)', rotation=270, labelpad=15)
+    cbar.set_label('SOC (t C ha$^{-1}$)', rotation=270, labelpad=15)
     ax.xaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{int(x)}'))
     ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{int(y)}'))
     out = title.replace(' ', '_') + '.png'
